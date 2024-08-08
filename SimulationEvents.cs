@@ -1,61 +1,42 @@
 using WindowsInput;
 using WindowsInput.Events;
-using System;
-using System.Runtime.InteropServices;
 using System.Threading.Tasks;
 
 public class SimulationEvents
 {
-    // Method to simulate mouse events
-    public async Task SimulateMouseEvent(IntPtr wParam, IntPtr lParam)
+    // Simulate mouse events
+    public async Task SimulateMouseEvent(KeyCode mouseKeyCode, int? x = null, int? y = null, int? delta = null)
     {
-        var mouseEventFlags = (MOUSEEVENTF)wParam.ToInt32();
-        var coordinates = ExtractCoordinates(lParam); // Extract coordinates for mouse move
-
-        switch (mouseEventFlags)
+        var simulate = Simulate.Events();
+        
+        switch (mouseKeyCode)
         {
-            case MOUSEEVENTF.LEFTDOWN:
-                await Simulate.Events().Click(ButtonCode.Left).Invoke();
+            case KeyCode.MOUSE_LEFTDOWN:
+            case KeyCode.MOUSE_LEFTUP:
+            case KeyCode.MOUSE_RIGHTDOWN:
+            case KeyCode.MOUSE_RIGHTUP:
+                simulate = simulate.Click(mouseKeyCode);
                 break;
-            case MOUSEEVENTF.LEFTUP:
-                await Simulate.Events().Release(ButtonCode.Left).Invoke();
+            case KeyCode.MOUSE_MOVE:
+                if (x.HasValue && y.HasValue)
+                {
+                    simulate = simulate.MoveTo(x.Value, y.Value);
+                }
                 break;
-            case MOUSEEVENTF.RIGHTDOWN:
-                await Simulate.Events().Click(ButtonCode.Right).Invoke();
-                break;
-            case MOUSEEVENTF.RIGHTUP:
-                await Simulate.Events().Release(ButtonCode.Right).Invoke();
-                break;
-            case MOUSEEVENTF.MIDDLEUP:
-                await Simulate.Events().Release(ButtonCode.Middle).Invoke();
-                break;
-            case MOUSEEVENTF.MIDDLEDOWN:
-                await Simulate.Events().Click(ButtonCode.Middle).Invoke();
-                break;
-            case MOUSEEVENTF.MOUSEMOVE:
-                // Move the mouse to the specified coordinates
-                await Simulate.Events().MoveTo(coordinates.x, coordinates.y).Invoke();
-                break;
-            case MOUSEEVENTF.WHEEL:
-                // Simulate mouse wheel movement
-                var delta = wParam.ToInt32();
-                await Simulate.Events().Scroll(delta).Invoke();
+            case KeyCode.MOUSE_WHEEL:
+                if (delta.HasValue)
+                {
+                    simulate = simulate.Scroll(delta.Value);
+                }
                 break;
         }
+
+        await simulate.Invoke();
     }
 
-    // Method to simulate keyboard events
-    public async Task SimulateKeyboardEvent(IntPtr wParam, IntPtr lParam)
+    // Simulate keyboard events
+    public async Task SimulateKeyboardEvent(KeyCode keyCode)
     {
-        var keyCode = (VirtualKeyCode)wParam.ToInt32();
-        await Simulate.Events().KeyPress(keyCode).Invoke();
-    }
-
-    // Utility to extract coordinates from lParam
-    private (int x, int y) ExtractCoordinates(IntPtr lParam)
-    {
-        int x = lParam.ToInt32() & 0xFFFF; // Lower word
-        int y = lParam.ToInt32() >> 16;    // Upper word
-        return (x, y);
+        await Simulate.Events().Click(keyCode).Invoke();
     }
 }
