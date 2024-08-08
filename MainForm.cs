@@ -63,24 +63,41 @@ private void HandleEvent(int eventType, IntPtr wParam, IntPtr lParam)
         ReplayActions();
     }
 
-private void ReplayActions()
+private async Task ReplayActions()
 {
     UpdateStatus("Replaying actions...");
     foreach (var record in eventRecords)
     {
-        Thread.Sleep(record.Delay);
+        await Task.Delay(record.Delay);
         switch (record.EventType)
         {
             case 0: // Mouse event
-                simulator.SimulateMouseEvent(record.wParam, record.lParam);
+                // Extract mouse parameters from record; assuming you have methods to do this
+                var mouseEvent = ExtractMouseEvent(record.wParam, record.lParam);
+                await simulator.SimulateMouseEvent(mouseEvent.MouseKeyCode, mouseEvent.X, mouseEvent.Y, mouseEvent.Delta);
                 break;
             case 1: // Keyboard event
-                simulator.SimulateKeyboardEvent(record.wParam, record.lParam);
+                // Extract key code from wParam; assuming KeyCode is compatible with IntPtr conversion
+                var keyCode = (KeyCode)record.wParam.ToInt32();  // Make sure this cast is valid based on your KeyCode definitions
+                await simulator.SimulateKeyboardEvent(keyCode);
                 break;
         }
     }
     UpdateStatus("Replay completed.");
 }
+
+
+private (KeyCode MouseKeyCode, int? X, int? Y, int? Delta) ExtractMouseEvent(IntPtr wParam, IntPtr lParam)
+{
+    // Example extraction logic; this needs to be adapted to your specific data structure
+    KeyCode mouseKeyCode = (KeyCode)wParam.ToInt32(); // Adjust based on actual data
+    int? x = null, y = null; // Extract coordinates from lParam if applicable
+    int? delta = null; // Extract delta for scroll from wParam or lParam if applicable
+
+    return (mouseKeyCode, x, y, delta);
+}
+
+
 
 private void SimulateMouseEvent(IntPtr wParam, IntPtr lParam)
 {
